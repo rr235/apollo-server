@@ -87,26 +87,27 @@ describe('rootFieldUsed', () => {
     const warnings = validateRootFieldUsed(serviceA);
 
     expect(warnings).toHaveLength(1);
+    expect(warnings[0].extensions.code).toEqual('ROOT_QUERY_USED');
     expect(warnings).toMatchInlineSnapshot(`
       Array [
-        [GraphQLError: [serviceA] Query -> Found invalid use of default root operation type \`Query\`. Default root operation type names (Query, Mutation, Subscription) are disallowed when a schema is defined or extended within a service.],
+        [GraphQLError: [serviceA] Query -> Found invalid use of default root operation name \`Query\`. Default root operation names (Query, Mutation, Subscription) are disallowed when their respective operation type definition is provided in the schema definition or extension.],
       ]
     `);
   });
 
-  fit('warns against using default operation type names (Query, Mutation, Subscription) when a non-default operation type name is provided in the schema definition', () => {
+  it('warns against using default operation type names (Query, Mutation, Subscription) when a non-default operation type name is provided in the schema definition', () => {
     const serviceA = {
       typeDefs: gql`
         schema {
-          query: RootQuery
+          mutation: RootMutation
         }
 
-        type RootQuery {
-          product: Product
+        type RootMutation {
+          updateProduct(sku: ID!): Product
         }
 
-        type Query {
-          invalidUseOfQuery: Boolean
+        type Mutation {
+          invalidUseOfMutation: Boolean
         }
       `,
       name: 'serviceA',
@@ -115,14 +116,15 @@ describe('rootFieldUsed', () => {
     const warnings = validateRootFieldUsed(serviceA);
 
     expect(warnings).toHaveLength(1);
+    expect(warnings[0].extensions.code).toEqual('ROOT_MUTATION_USED');
     expect(warnings).toMatchInlineSnapshot(`
       Array [
-        [GraphQLError: [serviceA] Query -> Found invalid use of default root operation type \`Query\`. Default root operation type names (Query, Mutation, Subscription) are disallowed when a schema is defined or extended within a service.],
+        [GraphQLError: [serviceA] Mutation -> Found invalid use of default root operation name \`Mutation\`. Default root operation names (Query, Mutation, Subscription) are disallowed when their respective operation type definition is provided in the schema definition or extension.],
       ]
     `);
   });
 
-  fit("doesn't warn against using default operation type names when no schema definition is provided", () => {
+  it("doesn't warn against using default operation type names when no schema definition is provided", () => {
     const serviceA = {
       typeDefs: gql`
         type Query {
@@ -136,7 +138,7 @@ describe('rootFieldUsed', () => {
     expect(warnings).toHaveLength(0);
   });
 
-  fit("doesn't warn against using default operation type names when a schema is defined", () => {
+  it("doesn't warn against using default operation type names when a schema is defined", () => {
     const serviceA = {
       typeDefs: gql`
         schema {

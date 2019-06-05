@@ -152,4 +152,49 @@ it('treats types with @extends as type extensions', () => {
   `);
 });
 
+it('errors on invalid usages of default operation names', () => {
+  const serviceA = {
+    typeDefs: gql`
+      schema {
+        query: RootQuery
+      }
+
+      type RootQuery {
+        product: Product
+      }
+
+      type Product @key(fields: "id") {
+        id: ID!
+        query: Query
+      }
+
+      type Query {
+        invalidUseOfQuery: Boolean
+      }
+    `,
+    name: 'serviceA',
+  };
+
+  const serviceB = {
+    typeDefs: gql`
+      type Query {
+        validUseOfQuery: Boolean
+      }
+
+      extend type Product @key(fields: "id") {
+        id: ID! @external
+        sku: String
+      }
+    `,
+    name: 'serviceB',
+  };
+
+  const { errors } = composeAndValidate([serviceA, serviceB]);
+  expect(errors).toMatchInlineSnapshot(`
+    Array [
+      [GraphQLError: [serviceA] Query -> Found invalid use of default root operation name \`Query\`. Default root operation names (Query, Mutation, Subscription) are disallowed when their respective operation type definition is provided in the schema definition or extension.],
+    ]
+  `);
+});
+
 it.todo('errors on duplicate types where there is a mismatch of field types');
